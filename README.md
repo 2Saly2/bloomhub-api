@@ -1,21 +1,21 @@
 🌸 BloomHub API
 
-A modular REST API built with Express.js and MongoDB, designed for authentication and role-based authorization.
-It follows a clean, service-driven architecture using import aliases for better structure and scalability.
+BloomHub API is a modular RESTful backend built with Express.js and MongoDB, designed for user authentication and role-based access control.
+It follows a clean, scalable architecture using import aliases and service-driven modules.
 
 🚀 Features
 
-🔐 User Authentication (JWT) — Register and login securely
+🔐 JWT Authentication — Secure user login and registration
 
-🧩 Modular Architecture — Organized by modules for maintainability
+👥 Role-Based Authorization — Admin and Member roles with scoped access
 
-👥 Role-Based Access Control — Admins and Members with scoped permissions
+🧩 Modular Architecture — Organized and maintainable folder structure
 
-⚙️ Import Aliases Support — Clean paths using #@/ prefix
+🗄️ MongoDB Integration — Using Mongoose for data modeling
 
-🧠 Centralized Error Handling — Clear and consistent API responses
+⚙️ Import Aliases — Clean imports using #@/ prefix
 
-🗄️ MongoDB Integration — Mongoose ODM for schema and data management
+🧠 Centralized Error Handling — Unified API responses
 
 🛠 Tech Stack
 
@@ -27,9 +27,9 @@ Authentication: JWT (jsonwebtoken)
 
 Security: bcrypt for password hashing
 
-Development Tools: Nodemon for hot reload
+Development: Nodemon for hot reload
 
-⚙️ Setup Instructions
+⚙️ Setup
 # Clone the repository
 git clone https://github.com/2Saly2/bloomhub-api.git
 cd bloomhub-api
@@ -37,12 +37,12 @@ cd bloomhub-api
 # Install dependencies
 npm install
 
-# Create a .env file and add the following:
+# Create a .env file and add:
 MONGO_URI=mongodb://localhost:27017/bloomhub_db
 PORT=5000
-JWT_SECRET=your_super_secret_key
+JWT_SECRET=your_secret_key
 
-# Start the development server
+# Run the development server
 npm run dev
 
 
@@ -50,10 +50,10 @@ npm run dev
 
 🔐 Authentication & Roles
 Method	Endpoint	Description	Auth	Role
-POST	/auth/register	Register a new user	❌	Any
-POST	/auth/login	Login and get JWT token	❌	Any
-GET	/admin-only	Access admin route	✅	Admin
-GET	/member-only	Access member route	✅	Member
+POST	/auth/register	Register new user	❌	Any
+POST	/auth/login	Login and receive token	❌	Any
+GET	/admin-only	Admin access route	✅	Admin
+GET	/member-only	Member access route	✅	Member
 
 Example Login Request:
 
@@ -63,21 +63,20 @@ Example Login Request:
 }
 
 
-Authorization Header:
-
+Use token in header:
 Authorization: Bearer <your_token_here>
 
 📁 Project Structure
 src/
- ├── main.js                     # App entry point
+ ├── main.js                 # App entry point
  ├── databases/
- │   └── connect-mongo.js        # MongoDB connection
+ │   └── connect-mongo.js    # MongoDB connection
  ├── middlewares/
- │   ├── auth.js                 # JWT verification
- │   └── roles.js                # Role authorization
+ │   ├── auth.js             # JWT authentication
+ │   └── roles.js            # Role-based permissions
  ├── routes/
- │   ├── auth.js                 # Auth routes
- │   └── index.js                # Global router
+ │   ├── auth.js             # Auth routes
+ │   └── index.js            # Main router
  └── modules/
      └── auth/
          ├── model/
@@ -85,29 +84,26 @@ src/
          ├── controller/
          └── routes/
 
-📊 Example Responses
+🧪 Example Responses
 
-✅ Success Response
+✅ Success
 
-{
-  "success": true,
-  "message": "Welcome Admin 🌸"
-}
+{ "success": true, "message": "Welcome Admin 🌸" }
 
 
-❌ Error Response
+❌ Error
 
-{
-  "success": false,
-  "message": "Unauthorized"
-}
+{ "success": false, "message": "Unauthorized" }
 
-🧪 Testing
+💡 Project Type
 
-You can test all routes using Postman or REST Client (VS Code extension).
-Make sure MongoDB is running locally on port 27017 before starting the API.
+This project represents a Client Project Tracker API, where:
+
+Admins can manage users and data globally
+
+Members can access only their own information
 
 📜 License
 
-This project is licensed under the MIT License.
-Built with ❤️ using Express + MongoDB, as part of backend learning practice.
+Licensed under the MIT License.
+Built with ❤️ using Express.js + MongoDB as part of backend learning and architecture practice.
