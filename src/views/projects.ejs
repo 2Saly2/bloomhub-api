@@ -1,0 +1,375 @@
+<!-- Project Cards Grid -->
+<div class="container mx-auto px-4 py-8">
+  <div class="flex justify-between items-center mb-8">
+    <h1 class="text-2xl font-bold text-gray-800">Projects</h1>
+    
+    <!-- Create Project Button - Only show if user is logged in -->
+    <% if (user) { %>
+      <button 
+        onclick="toggleModal('createProjectModal')"
+        class="bg-emerald-600 text-white px-4 py-2 rounded hover:bg-emerald-700 transition duration-200"
+      >
+        Create Project
+      </button>
+    <% } %>
+  </div>
+
+  <!-- Projects Grid -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <% if (projects && projects.length) { %>
+      <% projects.forEach(function(project) { %>
+        <div class="bg-white rounded-lg shadow-md hover:shadow-lg transition duration-200 overflow-hidden">
+          <% if (project.image) { %>
+            <div class="h-40 w-full overflow-hidden">
+              <img src="<%= project.image %>" alt="<%= project.name %>" class="w-full h-full object-cover" />
+            </div>
+          <% } %>
+          <div class="p-6">
+            <div class="flex justify-between items-start mb-4">
+              <h3 class="text-lg font-semibold text-gray-800"><%= project.name %></h3>
+              <span class="px-2 py-1 text-xs rounded-full
+                <%= project.status === 'completed' ? 'bg-green-100 text-green-800' :
+                    project.status === 'in-progress' ? 'bg-blue-100 text-blue-800' :
+                    'bg-gray-100 text-gray-800' %>">
+                <%= project.status || 'pending' %>
+              </span>
+            </div>
+            
+            <p class="text-gray-600 mb-4"><%= project.description || 'No description available' %></p>
+            
+            <div class="flex justify-between items-center text-sm text-gray-500">
+              <span>Owner: <%= project.owner?.username || 'Unknown' %></span>
+              <span>Created: <%= new Date(project.createdAt).toLocaleDateString() %></span>
+            </div>
+
+            <% if (user && (user.role === 'admin' || String(user._id) === String(project.owner?._id || project.owner))) { %>
+              <div class="border-t mt-4 pt-4 flex justify-end gap-2">
+                <button 
+                  onclick="viewProject('<%= project._id %>')"
+                  class="text-emerald-600 hover:text-emerald-700"
+                >
+                  View
+                </button>
+                <button 
+                  onclick="editProject('<%= project._id %>')"
+                  class="text-blue-600 hover:text-blue-700"
+                >
+                  Edit
+                </button>
+                <button 
+                  onclick="deleteProject('<%= project._id %>')"
+                  class="text-red-600 hover:text-red-700"
+                >
+                  Delete
+                </button>
+              </div>
+            <% } %>
+          </div>
+        </div>
+      <% }) %>
+    <% } else { %>
+      <div class="col-span-full text-center py-12">
+        <div class="text-gray-500 mb-4">No projects found</div>
+        <% if (!user) { %>
+          <a href="/auth/login" class="text-emerald-600 hover:text-emerald-700">
+            Log in to create a project
+          </a>
+        <% } %>
+      </div>
+    <% } %>
+  </div>
+
+  <!-- Create Project Modal -->
+  <div id="createProjectModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center">
+    <div class="bg-white rounded-lg p-6 w-full max-w-md">
+      <h2 class="text-xl font-semibold mb-4">Create New Project</h2>
+      <form id="createProjectForm" class="space-y-4">
+        <div>
+          <label class="block text-gray-700 text-sm font-medium mb-1">
+            Project Name
+          </label>
+          <input 
+            type="text"
+            id="projectName"
+            name="name"
+            class="w-full border rounded px-3 py-2"
+            required
+          />
+        </div>
+        <div>
+          <label class="block text-gray-700 text-sm font-medium mb-1">
+            Description
+          </label>
+          <textarea
+            id="projectDescription"
+            name="description"
+            rows="3"
+            class="w-full border rounded px-3 py-2"
+          ></textarea>
+        </div>
+        <div>
+          <label class="block text-gray-700 text-sm font-medium mb-1">Project Image</label>
+          <input type="file" id="projectImage" name="image" accept="image/*" class="w-full" />
+        </div>
+        <div class="flex justify-end gap-2">
+          <button 
+            type="button"
+            onclick="toggleModal('createProjectModal')"
+            class="px-4 py-2 text-gray-600 hover:text-gray-700"
+          >
+            Cancel
+          </button>
+          <button 
+            type="submit"
+            class="bg-emerald-600 text-white px-4 py-2 rounded hover:bg-emerald-700"
+          >
+            Create Project
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Edit Project Modal -->
+  <div id="editProjectModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center">
+    <div class="bg-white rounded-lg p-6 w-full max-w-md">
+      <h2 class="text-xl font-semibold mb-4">Edit Project</h2>
+      <form id="editProjectForm" class="space-y-4">
+        <input type="hidden" id="editProjectId" />
+        <div>
+          <label class="block text-gray-700 text-sm font-medium mb-1">
+            Project Name
+          </label>
+          <input 
+            type="text"
+            id="editProjectName"
+            name="name"
+            class="w-full border rounded px-3 py-2"
+            required
+          />
+        </div>
+        <div>
+          <label class="block text-gray-700 text-sm font-medium mb-1">
+            Description
+          </label>
+          <textarea
+            id="editProjectDescription"
+            name="description"
+            rows="3"
+            class="w-full border rounded px-3 py-2"
+          ></textarea>
+        </div>
+        <div>
+          <label class="block text-gray-700 text-sm font-medium mb-1">
+            Status
+          </label>
+          <select
+            id="editProjectStatus"
+            name="status"
+            class="w-full border rounded px-3 py-2"
+          >
+            <option value="pending">Pending</option>
+            <option value="in-progress">In Progress</option>
+            <option value="completed">Completed</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-gray-700 text-sm font-medium mb-1">Replace Image (optional)</label>
+          <input type="file" id="editProjectImage" name="image" accept="image/*" class="w-full" />
+        </div>
+        <div class="flex justify-end gap-2">
+          <button 
+            type="button"
+            onclick="toggleModal('editProjectModal')"
+            class="px-4 py-2 text-gray-600 hover:text-gray-700"
+          >
+            Cancel
+          </button>
+          <button 
+            type="submit"
+            class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          >
+            Save Changes
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Notifications -->
+<div id="toastContainer" class="fixed bottom-4 right-4 space-y-2"></div>
+
+<script>
+  // Helper: Toast notifications
+  function showToast(message, type = 'success') {
+    const toast = document.createElement('div');
+    toast.className = `p-4 rounded shadow-lg transition transform duration-300 ${
+      type === 'error' ? 'bg-red-50 border border-red-100 text-red-800' :
+      'bg-green-50 border border-green-100 text-green-800'
+    }`;
+    toast.textContent = message;
+    
+    // Add to container
+    const container = document.getElementById('toastContainer');
+    container.appendChild(toast);
+    
+    // Animate in
+    requestAnimationFrame(() => {
+      toast.style.transform = 'translateY(-10px)';
+      toast.style.opacity = '0';
+      requestAnimationFrame(() => {
+        toast.style.transform = 'translateY(0)';
+        toast.style.opacity = '1';
+      });
+    });
+    
+    // Remove after delay
+    setTimeout(() => {
+      toast.style.transform = 'translateY(-10px)';
+      toast.style.opacity = '0';
+      setTimeout(() => toast.remove(), 300);
+    }, 3000);
+  }
+
+  // Helper: Modal toggle
+  function toggleModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal.classList.contains('hidden')) {
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    } else {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+  }
+
+  // Helper: API calls
+  async function api(url, opts = {}) {
+    opts.credentials = 'same-origin'; // include cookies
+    opts.headers = opts.headers || {};
+    if (opts.body && !(opts.body instanceof FormData)) {
+      opts.headers['Content-Type'] = 'application/json';
+      opts.body = JSON.stringify(opts.body);
+    }
+    const res = await fetch(url, opts);
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(text || res.statusText);
+    }
+    try { return await res.json(); } catch(e) { return null; }
+  }
+
+  // Create project (supports file upload)
+  document.getElementById('createProjectForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const form = e.target;
+    const name = form.elements.name.value.trim();
+    const description = form.elements.description.value.trim();
+    if (!name) return showToast('Project name is required', 'error');
+
+    const fd = new FormData();
+    fd.append('name', name);
+    fd.append('description', description);
+    const file = document.getElementById('projectImage')?.files?.[0];
+    if (file) fd.append('image', file);
+
+    try {
+      await api('/projects', { method: 'POST', body: fd });
+      showToast('Project created successfully');
+      toggleModal('createProjectModal');
+      location.reload();
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  });
+
+  // View project details
+  async function viewProject(id) {
+    try {
+      const resp = await api('/projects/' + id);
+      const project = resp.data || resp;
+      
+      // Format project details
+      const details = [
+        ['Name', project.name],
+        ['Description', project.description || 'No description'],
+        ['Status', project.status || 'pending'],
+        ['Owner', project.owner?.username || 'Unknown'],
+        ['Created', new Date(project.createdAt).toLocaleString()],
+        ['Updated', new Date(project.updatedAt).toLocaleString()]
+      ];
+
+      // Show formatted details
+      alert(details.map(([k, v]) => `${k}: ${v}`).join('\n'));
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  }
+
+  // Load project data into edit form
+  async function editProject(id) {
+    try {
+      const resp = await api('/projects/' + id);
+      const project = resp.data || resp;
+      
+      // Populate form
+      document.getElementById('editProjectId').value = project._id;
+      document.getElementById('editProjectName').value = project.name || '';
+      document.getElementById('editProjectDescription').value = project.description || '';
+      document.getElementById('editProjectStatus').value = project.status || 'pending';
+      
+      // Show modal
+      toggleModal('editProjectModal');
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  }
+
+  // Handle edit form submission
+  document.getElementById('editProjectForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const form = e.target;
+    const id = document.getElementById('editProjectId').value;
+    const name = form.elements.name.value.trim();
+    const description = form.elements.description.value.trim();
+    const status = form.elements.status.value;
+    if (!name) return showToast('Project name is required', 'error');
+
+    const fd = new FormData();
+    fd.append('name', name);
+    fd.append('description', description);
+    fd.append('status', status);
+    const file = document.getElementById('editProjectImage')?.files?.[0];
+    if (file) fd.append('image', file);
+
+    try {
+      await api('/projects/' + id, { method: 'PUT', body: fd });
+      showToast('Project updated successfully');
+      toggleModal('editProjectModal');
+      location.reload();
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  });
+
+  // Delete project
+  async function deleteProject(id) {
+    if (!confirm('Are you sure you want to delete this project? This action cannot be undone.')) return;
+    
+    try {
+      await api('/projects/' + id, { method: 'DELETE' });
+      showToast('Project deleted successfully');
+      location.reload();
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  }
+
+  // Close modals when clicking outside
+  document.querySelectorAll('.fixed.inset-0').forEach(modal => {
+    modal.addEventListener('click', e => {
+      if (e.target === modal) toggleModal(modal.id);
+    });
+  });
+</script>
