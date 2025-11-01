@@ -1,22 +1,26 @@
 import jwt from 'jsonwebtoken';
-import dotenv from 'dotenv';
+import User from '#@/modules/auth/model/index.js';
 
-dotenv.config();
-
-export function auth(req, res, next) {
-  const authHeader = req.headers.authorization;
-
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'Unauthorized: No token provided' });
-  }
-
-  const token = authHeader.split(' ')[1];
-
+export const auth = async (req, res, next) => {
   try {
+    // Support token in Authorization header OR cookie (so browser fetch() from pages works)
+    const authHeader = req.headers.authorization;
+    let token = null;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.split(' ')[1];
+    } else if (req.cookies && req.cookies.token) {
+      token = req.cookies.token;
+    }
+
+    if (!token) return res.status(401).json({ error: 'No token provided' });
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded; // { userId, role }
+
+  const user = await User.findById(decoded.id).select('-password');
+    if (!user) return res.status(401).json({ error: 'User not found' });
+
+    req.user = user; 
     next();
   } catch (err) {
-    return res.status(401).json({ error: 'Unauthorized: Invalid token' });
+    res.status(401).json({ error: 'Unauthorized', message: err.message });
   }
-}
+};

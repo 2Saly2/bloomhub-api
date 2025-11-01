@@ -1,26 +1,61 @@
-import bcrypt from 'bcryptjs';
+// src/modules/auth/services/index.js
 import jwt from 'jsonwebtoken';
-import dotenv from 'dotenv';
-import { User } from '#@/modules/auth/model/index.js';
+import bcrypt from 'bcryptjs';
+import User from '../model/index.js';
 
-dotenv.config();
+/**
+ * Register a new user
+ * @param {Object} userData - { username, email, password, role }
+ * @returns {Object} { user, token }
+ */
+export const registerUser = async (userData) => {
+  const { username, email, password, role = 'user' } = userData;
 
-export async function register({ name, email, password, role }) {
-  const existing = await User.findOne({ email });
-  if (existing) throw new Error('User already exists');
+  // Check if user already exists
+  const existingUser = await User.findOne({ email });
+  if (existingUser) throw new Error('Email already registered');
 
-  const hashed = await bcrypt.hash(password, 10);
-  const user = await User.create({ name, email, password: hashed, role });
-  return user;
-}
+  // Create and save the user (password hashing happens in pre-save hook)
+  const user = new User({ username, email, password, role });
+  await user.save();
 
-export async function login({ email, password }) {
+  // Generate JWT token
+  const token = jwt.sign(
+    { id: user._id, role: user.role },
+    process.env.JWT_SECRET,
+    { expiresIn: '7d' }
+  );
+
+  // Return simplified response
+  return { 
+    user: { _id: user._id, username: user.username, email: user.email, role: user.role }, 
+    token 
+  };
+};
+
+/**
+ * Login user
+ * @param {string} email
+ * @param {string} password
+ * @returns {Object} { user, token }
+ */
+export const loginUser = async (email, password) => {
   const user = await User.findOne({ email });
-  if (!user) throw new Error('Invalid credentials');
+  if (!user) throw new Error('User not found');
 
-  const valid = await bcrypt.compare(password, user.password);
-  if (!valid) throw new Error('Invalid credentials');
+  // Compare plaintext password with hashed password in DB
+  const isMatch = await bcrypt.compare(password, user.password);
+  if (!isMatch) throw new Error('Invalid credentials');
 
-  const token = jwt.sign({ userId: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '7d' });
-  return { user, token };
-}
+  // Generate JWT token
+  const token = jwt.sign(
+    { id: user._id, role: user.role },
+    process.env.JWT_SECRET,
+    { expiresIn: '7d' }
+  );
+
+  return { 
+    user: { _id: user._id, username: user.username, email: user.email, role: user.role }, 
+    token 
+  };
+};

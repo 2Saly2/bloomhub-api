@@ -1,0 +1,272 @@
+<div class="bg-white rounded-lg shadow p-6">
+  <h1 class="text-2xl font-semibold mb-6">Admin Dashboard</h1>
+
+  <!-- Users Section -->
+  <section class="mb-8">
+    <h2 class="text-lg font-medium mb-4">User Management</h2>
+    
+    <!-- Create user form -->
+    <div class="mb-6">
+      <form id="create-user-form" class="flex gap-2 items-start">
+        <div class="space-y-2">
+          <input id="new-user-name" name="username" placeholder="Username" class="border p-2 rounded w-48" required />
+          <input id="new-user-email" name="email" type="email" placeholder="Email" class="border p-2 rounded w-48" required />
+        </div>
+        <div class="space-y-2">
+          <input id="new-user-password" name="password" type="password" placeholder="Password" class="border p-2 rounded w-48" required />
+          <select id="new-user-role" name="role" class="border p-2 rounded w-48">
+            <option value="user">User</option>
+            <option value="member">Member</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+        <button type="submit" class="bg-emerald-600 text-white px-4 py-2 rounded h-10">Add User</button>
+      </form>
+    </div>
+
+    <!-- Users table -->
+    <div class="overflow-x-auto">
+      <table class="min-w-full bg-white border mb-8">
+        <thead>
+          <tr class="bg-gray-100 text-left text-sm">
+            <th class="py-2 px-4">ID</th>
+            <th class="py-2 px-4">Username</th>
+            <th class="py-2 px-4">Email</th>
+            <th class="py-2 px-4">Role</th>
+            <th class="py-2 px-4">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="user-list">
+          <% users.forEach(function(u) { %>
+            <tr class="border-t text-sm" data-id="<%= u._id || u.id %>">
+              <td class="py-2 px-4"><%= u._id || u.id %></td>
+              <td class="py-2 px-4"><%= u.username %></td>
+              <td class="py-2 px-4"><%= u.email %></td>
+              <td class="py-2 px-4">
+                <span class="px-2 py-1 rounded text-xs
+                  <%= u.role === 'admin' ? 'bg-purple-100 text-purple-800' :
+                      u.role === 'member' ? 'bg-blue-100 text-blue-800' :
+                      'bg-gray-100 text-gray-800' %>">
+                  <%= u.role %>
+                </span>
+              </td>
+              <td class="py-2 px-4">
+                <button data-action="edit-user" data-id="<%= u._id || u.id %>" class="text-blue-600 hover:underline mr-2">Edit</button>
+                <% if (u.role !== 'admin') { %>
+                  <button data-action="delete-user" data-id="<%= u._id || u.id %>" class="text-red-600 hover:underline">Delete</button>
+                <% } %>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Projects Section -->
+  <section>
+    <h2 class="text-lg font-medium mb-4">Project Management</h2>
+    
+    <!-- Create project form -->
+    <div class="mb-6">
+      <form id="create-project-form" class="flex gap-2">
+        <input id="new-name" name="name" placeholder="Project name" class="border p-2 rounded w-1/3" required />
+        <input id="new-description" name="description" placeholder="Short description" class="border p-2 rounded flex-1" />
+        <button type="submit" class="bg-emerald-600 text-white px-4 py-2 rounded">Create</button>
+      </form>
+    </div>
+
+  <% if (projects && projects.length) { %>
+    <div class="overflow-x-auto">
+      <table class="min-w-full bg-white border">
+        <thead>
+          <tr class="bg-gray-100 text-left text-sm">
+            <th class="py-2 px-4">ID</th>
+            <th class="py-2 px-4">Project Name</th>
+            <th class="py-2 px-4">Owner</th>
+            <th class="py-2 px-4">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="project-list">
+          <% projects.forEach(function(p) { %>
+            <tr class="border-t text-sm" data-id="<%= p._id || p.id %>">
+              <td class="py-2 px-4"><%= p._id || p.id %></td>
+              <td class="py-2 px-4"><%= p.name %></td>
+              <td class="py-2 px-4"><%= p.owner?.username || p.owner || '—' %></td>
+              <td class="py-2 px-4">
+                <button data-action="view" data-id="<%= p._id || p.id %>" class="text-emerald-600 hover:underline mr-2">View</button>
+                <button data-action="edit" data-id="<%= p._id || p.id %>" class="text-blue-600 hover:underline mr-2">Edit</button>
+                <button data-action="delete" data-id="<%= p._id || p.id %>" class="text-red-600 hover:underline">Delete</button>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  <% } else { %>
+    <div class="text-center py-12 text-gray-600">No projects found. Use the form above to create one.</div>
+  <% } %>
+
+  <script>
+    // Helper: Toast notifications
+    function showToast(message, type = 'success') {
+      const toast = document.createElement('div');
+      toast.className = `fixed bottom-4 right-4 p-4 rounded shadow-lg ${
+        type === 'error' ? 'bg-red-50 border border-red-100 text-red-800' :
+        'bg-green-50 border border-green-100 text-green-800'
+      }`;
+      toast.textContent = message;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    }
+
+    // Helper: perform fetch with credentials
+    async function api(url, opts = {}) {
+      opts.credentials = 'same-origin'; // include cookies
+      opts.headers = opts.headers || {};
+      if (opts.body && !(opts.body instanceof FormData)) {
+        opts.headers['Content-Type'] = 'application/json';
+        opts.body = JSON.stringify(opts.body);
+      }
+      const res = await fetch(url, opts);
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || res.statusText);
+      }
+      try { return await res.json(); } catch(e) { return null; }
+    }
+
+    // Create user
+    document.getElementById('create-user-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const username = document.getElementById('new-user-name').value.trim();
+      const email = document.getElementById('new-user-email').value.trim();
+      const password = document.getElementById('new-user-password').value;
+      const role = document.getElementById('new-user-role').value;
+
+      if (!username || !email || !password) return showToast('All fields required', 'error');
+
+      try {
+        await api('/admin/users', {
+          method: 'POST',
+          body: { username, email, password, role }
+        });
+        showToast('User created successfully');
+        location.reload();
+      } catch (err) {
+        showToast('Create failed: ' + err.message, 'error');
+      }
+    });
+
+    // Create project
+    document.getElementById('create-project-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('new-name').value.trim();
+      const description = document.getElementById('new-description').value.trim();
+      if (!name) return showToast('Name required', 'error');
+      try {
+        await api('/projects', { method: 'POST', body: { name, description } });
+        showToast('Project created successfully');
+        location.reload();
+      } catch (err) {
+        showToast('Create failed: ' + err.message, 'error');
+      }
+    });
+
+    // User actions
+    document.getElementById('user-list')?.addEventListener('click', async (e) => {
+      const btn = e.target.closest('button');
+      if (!btn) return;
+
+      const id = btn.getAttribute('data-id');
+      const action = btn.getAttribute('data-action');
+
+      if (action === 'edit-user') {
+        const user = btn.closest('tr');
+        const username = user.cells[1].textContent;
+        const email = user.cells[2].textContent;
+        const currentRole = user.cells[3].textContent.trim();
+
+        // Simple prompt-based edit for now
+        const newUsername = prompt('New username:', username);
+        if (!newUsername) return;
+
+        const newEmail = prompt('New email:', email);
+        if (!newEmail) return;
+
+        const newPassword = prompt('New password (leave empty to keep current):');
+        const newRole = prompt('New role (user/member/admin):', currentRole);
+
+        const updates = { username: newUsername, email: newEmail };
+        if (newPassword) updates.password = newPassword;
+        if (newRole) updates.role = newRole;
+
+        try {
+          await api('/admin/users/' + id, {
+            method: 'PUT',
+            body: updates
+          });
+          showToast('User updated successfully');
+          location.reload();
+        } catch (err) {
+          showToast('Update failed: ' + err.message, 'error');
+        }
+      }
+
+      if (action === 'delete-user') {
+        if (!confirm('Delete this user? This action cannot be undone.')) return;
+
+        try {
+          await api('/admin/users/' + id, { method: 'DELETE' });
+          showToast('User deleted successfully');
+          location.reload();
+        } catch (err) {
+          showToast('Delete failed: ' + err.message, 'error');
+        }
+      }
+    });
+
+    // Project actions
+    document.getElementById('project-list')?.addEventListener('click', async (e) => {
+      const btn = e.target.closest('button');
+      if (!btn) return;
+      const id = btn.getAttribute('data-id');
+      const action = btn.getAttribute('data-action');
+
+      if (action === 'view') {
+        try {
+          const resp = await api('/projects/' + id, { method: 'GET' });
+          showToast('Project details in console');
+          console.log(resp.data || resp);
+        } catch (err) { 
+          showToast('View failed: ' + err.message, 'error');
+        }
+      }
+
+      if (action === 'edit') {
+        const project = btn.closest('tr');
+        const currentName = project.cells[1].textContent;
+        const newName = prompt('New project name:', currentName);
+        if (newName === null) return; // cancelled
+        try {
+          await api('/projects/' + id, { method: 'PUT', body: { name: newName } });
+          showToast('Project updated successfully');
+          location.reload();
+        } catch (err) {
+          showToast('Update failed: ' + err.message, 'error');
+        }
+      }
+
+      if (action === 'delete') {
+        if (!confirm('Delete this project? This action cannot be undone.')) return;
+        try {
+          await api('/projects/' + id, { method: 'DELETE' });
+          showToast('Project deleted successfully');
+          location.reload();
+        } catch (err) {
+          showToast('Delete failed: ' + err.message, 'error');
+        }
+      }
+    });
+  </script>
+</div>
