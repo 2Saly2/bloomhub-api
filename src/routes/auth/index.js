@@ -17,10 +17,10 @@ router.get('/login', (req, res) => {
 // POST register
 router.post('/register', async (req, res) => {
   try {
-    const { user, token } = await authService.registerUser(req.body);
-    res.cookie('token', token, { httpOnly: true });
-    if (user.role === 'admin') return res.redirect('/admin');
-    res.redirect('/');
+    // Force role to 'user' and do NOT auto-login after registration.
+    const { user } = await authService.registerUser(req.body);
+    // After registration, render the login page with a success message.
+    return res.render('login', { error: null, success: 'Account created. Please log in.' });
   } catch (err) {
     res.render('register', { error: err.message });
   }

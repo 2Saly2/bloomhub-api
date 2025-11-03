@@ -9,7 +9,9 @@ import User from '../model/index.js';
  * @returns {Object} { user, token }
  */
 export const registerUser = async (userData) => {
-  const { username, email, password, role = 'user' } = userData;
+  const { username, email, password } = userData;
+  // Force role to 'user' for public registration. Admins must be created via admin tools.
+  const role = 'user';
 
   // Check if user already exists
   const existingUser = await User.findOne({ email });
